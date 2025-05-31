@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Company Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+<div class="max-w-6xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold mb-6 text-center">🏢 Company Search</h1>
+
+    <!-- Search Form -->
+    <form method="get" action="/company_search" class="flex gap-4 justify-center mb-10">
+        <input 
+            name="query" 
+            type="text" 
+            placeholder="Search by name or domain e.g. Revolut or revolut.com" 
+            value="{{ query or '' }}"  
+            class="border border-gray-300 rounded-lg px-4 py-2 w-96 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+        />
+        <button 
+            type="submit" 
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow">
+            🔍 Search
+        </button>
+    </form>
+
+    {% if results %}
+    <table class="w-full table-auto text-sm bg-white shadow rounded-lg overflow-hidden">
+        <thead class="bg-gray-100 text-left text-gray-700 border-b">
+        <tr>
+            <th class="p-3">Company Name</th>
+            <th class="p-3">Normalized Domain</th>
+            <th class="p-3">Domain for Sale</th>
+            <th class="p-3">Price (USD)</th>
+            <th class="p-3">Update</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for company in results %}
+        <tr class="border-b hover:bg-gray-50">
+            <form method="post" action="/update_company_metadata">
+                <input type="hidden" name="domain_query" value="{{ query }}">
+                <input type="hidden" name="company_id" value="{{ company.company_id }}">
+
+                <td class="p-3">
+                    {% if company.linkedin_url %}
+                        <a href="{{ company.linkedin_url }}" target="_blank" class="text-blue-500 underline">
+                            {{ company.name }}
+                        </a>
+                    {% else %}
+                        {{ company.name }}
+                    {% endif %}
+                </td>
+                <td class="p-3">{{ company.domain.replace("http://", "").replace("https://", "").replace("www.", "") }}</td>
+                <td class="p-3">
+                    <input type="text" name="domain_for_sale" value="{{ company.domain_for_sale or '' }}" 
+                           class="border border-gray-300 rounded px-2 py-1 w-full" />
+                </td>
+                <td class="p-3">
+                    <input type="text" name="price" value="{{ company.price or '' }}" 
+                           class="border border-gray-300 rounded px-2 py-1 w-full" />
+                </td>
+                <td class="p-3">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1 rounded">
+                        💾 Save
+                    </button>
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% elif query %}
+    <p class="text-center text-gray-500 mt-10">No companies found for <strong>{{ query }}</strong>.</p>
+    {% endif %}
+</div>
+</body>
+</html>

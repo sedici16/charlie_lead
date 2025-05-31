@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lead Processor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        label {
+            font-weight: 600;
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        button {
+            display: block;
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            margin-top: 30px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 16px;
+            border-radius: 6px;
+            background-color: #e6ffe6;
+            border: 1px solid #28a745;
+            color: #155724;
+            font-weight: 500;
+        }
+        .log-box {
+            margin-top: 30px;
+            padding: 16px;
+            background: #fdfdfd;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .log-box ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+        .log-box li {
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Lead Processor</h1>
+
+        <form method="post" action="/process">
+            <label for="domains">Enter one domain or Apollo ID per line:</label>
+            <textarea name="domains" placeholder="example.com&#10;67e2e92dfdee22000df33dfd" rows="6"></textarea>
+
+            <label for="job_titles">Job titles to filter (one per line):</label>
+            <textarea name="job_titles" rows="8">{% if job_titles %}{{ job_titles | join('\n') }}{% endif %}</textarea>
+
+            <label for="domain_sale">Domain for Sale</label>
+            <select name="domain_sale" id="domain_sale">
+                <option value="">-- Select a domain --</option>
+                {% for d in available_domains %}
+                    <option value="{{ d.domain }}">{{ d.domain }} — ${{ d.price }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">🚀 Start Processing</button>
+        </form>
+
+        {% if result %}
+        <div class="result">
+            {{ result }}
+        </div>
+        {% endif %}
+
+        {% if logs %}
+        <div class="log-box">
+            <strong>Log:</strong>
+            <ul>
+                {% for entry in logs %}
+                <li>{{ entry }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

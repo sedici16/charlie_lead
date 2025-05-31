@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lead Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <div class="max-w-5xl mx-auto py-10">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 Search Contacts by Domain</h1>
+
+        <!-- Search Form -->
+        <form method="post" action="/search" class="flex gap-4 justify-center mb-10">
+            <input 
+                name="domain_query" 
+                type="text" 
+                placeholder="e.g. notion.so" 
+                value="{{ domain_query or '' }}"  
+                class="border border-gray-300 rounded-lg px-4 py-2 w-80 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+            />
+            <button 
+                type="submit" 
+                class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow">
+                Search
+            </button>
+        </form>
+
+        <!-- Grouped Results -->
+        {% if grouped_results %}
+            <div class="space-y-8">
+                {% for domain, contacts in grouped_results.items() %}
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            
+                            <div>
+                                <h2 class="text-xl font-bold text-blue-600">
+                                    {{ contacts[0].company_name or "Unknown Company" }}
+                                </h2>
+                                <p class="text-sm text-gray-600">
+                                    🌐 <a href="https://{{ contacts[0].company_domain or domain }}" target="_blank" class="underline text-blue-500">
+                                        {{ contacts[0].company_domain or domain }}
+                                    </a>
+                                </p>
+                            </div>
+                            <a 
+                                href="/download_csv?domain={{ contacts[0].company_domain or domain }}" 
+                                class="text-sm text-blue-600 border border-blue-600 px-3 py-1 rounded hover:bg-blue-50 transition">
+                                ⬇️ Download CSV
+                            </a>
+                        </div>
+
+                        <form method="post" action="/bulk_action">
+                            <input type="hidden" name="domain_query" value="{{ csv_download }}">
+                            <table class="w-full text-sm table-auto">
+                                <thead class="text-left text-gray-600 border-b">
+                                    <tr>
+                                        <th class="pb-2">
+                                            <input type="checkbox" id="select_all" class="form-checkbox">
+                                        </th>
+                                        <th class="pb-2">Name</th>
+                                        <th class="pb-2">Title</th>
+                                        <th class="pb-2">Email</th>
+                                        <th class="pb-2">Source</th>
+                                        <th class="pb-2">Status</th> <!-- ✅ NEW -->
+                                        <th class="pb-2">LinkedIn</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for contact in contacts %}
+                                        <tr class="border-b hover:bg-gray-50">
+                                            
+                                            <td class="py-2">
+                                                <input type="checkbox" name="selected_contacts" value="{{ contact.linkedin }}" class="form-checkbox contact-checkbox">
+                                            </td>
+                                            <td class="py-2">{{ contact.first_name }} {{ contact.last_name }}</td>
+                                            <td class="py-2">{{ contact.title or "N/A" }}</td>
+                                            
+                                            <td class="py-2">
+                                                {% if contact.all_emails %}
+                                                    <select class="border border-gray-300 rounded px-2 py-1 text-sm">
+                                                        {% for email in contact.all_emails %}
+                                                            <option value="{{ email }}">{{ email }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                {% elif contact.email %}
+                                                    <a href="mailto:{{ contact.email }}" class="text-blue-500 underline">{{ contact.email }}</a>
+                                                {% else %}
+                                                    <span class="text-gray-400">Unavailable</span>
+                                                {% endif %}
+                                            </td>
+                                            
+
+                                            <td class="py-2">
+                                                {{ contact.email_source or 'N/A' }}
+                                            </td>
+                                            
+                                            <td class="py-2">
+                                                {% if contact.email_status == "verified" %}
+                                                    <span class="text-green-600 font-semibold">✅ Verified</span>
+                                                {% elif contact.email_status %}
+                                                    <span class="text-yellow-600 font-semibold">⚠️ {{ contact.email_status|capitalize }}</span>
+                                                {% else %}
+                                                    <span class="text-gray-400">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                         
+                                            
+                                            
+
+
+
+
+                                            <td class="py-2">
+                                                {% if contact.linkedin %}
+                                                    <a href="{{ contact.linkedin }}" target="_blank" class="text-blue-500 underline">Profile</a>
+                                                {% else %}
+                                                    <span class="text-gray-400">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            
+                            <!-- Bulk Action Buttons -->
+                            <div class="flex gap-4 mt-4">
+                                <button 
+                                    name="action" 
+                                    value="apollo" 
+                                    type="submit"
+                                    class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">
+                                    🚀 Find Emails with Apollo
+                                </button>
+                                <button 
+                                    name="action" 
+                                    value="signalhire" 
+                                    type="submit"
+                                    class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded">
+                                    🔥 Find Emails with SignalHire
+                                </button>
+                            </div>
+                            </form>                
+                      
+                    </div>
+                {% endfor %}
+            </div>
+        {% elif csv_download %}
+            <p class="text-center text-gray-500 mt-10">No contacts found for <strong>{{ csv_download }}</strong>.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

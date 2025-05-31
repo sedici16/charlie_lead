@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search by Company</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <div class="max-w-5xl mx-auto py-10">
+        <h1 class="text-3xl font-bold mb-6 text-center">🏢 Search Company and Employees</h1>
+
+        <!-- Search Form -->
+        <form method="get" action="/search_by_company_id" class="flex gap-4 justify-center mb-10">
+            <input 
+                name="domain_query" 
+                type="text" 
+                placeholder="e.g. gingercomms.com or GingerComms" 
+                value="{{ domain_query or '' }}"  
+                class="border border-gray-300 rounded-lg px-4 py-2 w-80 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
+            />
+            <button 
+                type="submit" 
+                class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow">
+                Search
+            </button>
+        </form>
+
+        {% for result in results %}
+        <div class="bg-white rounded-xl shadow p-6 mb-8">
+            <div class="mb-4">
+
+
+
+             <div class="mb-4 border-b pb-4">
+              <h2 class="text-2xl font-bold text-blue-600">{{ result.company.name or "Unknown Company" }}</h2>
+
+              {% if result.company.company_id %}
+                  <div class="mt-4">
+                      <a href="/download_csv_by_company_id?company_id={{ result.company.company_id }}"
+                         class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded inline-block">
+                          ⬇️ Export CSV (by Company ID)
+                      </a>
+                  </div>
+              {% endif %}
+
+                      
+              {% if result.company.website_url %}
+                  <p class="text-sm text-gray-600">
+                      🌐 <a href="{{ result.company.website_url }}" target="_blank" class="underline text-blue-500">{{ result.company.website_url }}</a>
+                  </p>
+              {% endif %}
+          
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm mt-2 text-gray-700">
+                  {% if result.company.linkedin_url %}<div>🔗 LinkedIn: <a href="{{ result.company.linkedin_url }}" class="text-blue-500 underline">{{ result.company.linkedin_url }}</a></div>{% endif %}
+                  {% if result.company.domain %}<div>🌍 Domain: {{ result.company.domain }}</div>{% endif %}
+                  {% if result.company.city %}<div>🏙️ City: {{ result.company.city }}</div>{% endif %}
+                  {% if result.company.industry %}<div>🏭 Industry: {{ result.company.industry }}</div>{% endif %}
+                  {% if result.company.company_size %}<div>👥 Size: {{ result.company.company_size }}</div>{% endif %}
+                  {% if result.company.estimated_num_employees %}<div>📊 Employees: {{ result.company.estimated_num_employees }}</div>{% endif %}
+                  {% if result.company.revenue_range %}<div>💰 Revenue Range: {{ result.company.revenue_range }}</div>{% endif %}
+                  {% if result.company.organization_revenue_printed %}<div>💵 Revenue: {{ result.company.organization_revenue_printed }}</div>{% endif %}
+                  {% if result.company.headcount_growth_6m %}<div>📈 6M Growth: {{ result.company.headcount_growth_6m }}</div>{% endif %}
+                  {% if result.company.headcount_growth_12m %}<div>📈 12M Growth: {{ result.company.headcount_growth_12m }}</div>{% endif %}
+                  {% if result.company.headcount_growth_24m %}<div>📈 24M Growth: {{ result.company.headcount_growth_24m }}</div>{% endif %}
+                  {% if result.company.intent_strength %}<div>🔥 Intent Strength: {{ result.company.intent_strength }}</div>{% endif %}
+                  {% if result.company.price %}<div>💸 Price: ${{ result.company.price }}</div>{% endif %}
+                  {% if result.company.domain_for_sale %}<div>🛒 Domain for Sale: {{ result.company.domain_for_sale }}</div>{% endif %}
+
+              </div>
+          </div>
+          
+                
+
+
+                <p class="text-sm text-gray-600">
+                    🌐 <a href="{{ result.company.website_url }}" class="underline text-blue-500" target="_blank">{{ result.company.domain }}</a>
+                    {% if result.company.industry %} | 🏭 {{ result.company.industry }}{% endif %}
+                    {% if result.company.estimated_num_employees %} | 👥 {{ result.company.estimated_num_employees }} employees{% endif %}
+                </p>
+            </div>
+
+            <!-- Employee Table -->
+            <form method="post" action="/bulk_action">
+                <input type="hidden" name="domain_query" value="{{ domain_query }}">
+                <input type="hidden" name="source" value="company_id">
+
+                <table class="w-full text-sm table-auto">
+                    <thead class="text-left text-gray-600 border-b">
+                        <tr>
+                            <th class="pb-2"><input type="checkbox" id="select_all" class="form-checkbox"></th>
+                            <th class="pb-2">Name</th>
+                            <th class="pb-2">Title</th>
+                            <th class="pb-2">Email</th>
+                            <th class="pb-2">Source</th>
+                            <th class="pb-2">Status</th>
+                            <th class="pb-2">LinkedIn</th>
+                            <th class="pb-2">Export</th> <!-- 🔽 NEW COLUMN -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in result.employees %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-2">
+                                <input type="checkbox" name="selected_contacts" value="{{ contact.linkedin }}" class="form-checkbox contact-checkbox">
+                            </td>
+                            <td class="py-2">{{ contact.first_name }} {{ contact.last_name }}</td>
+                            <td class="py-2">{{ contact.title or "N/A" }}</td>
+                            <td class="py-2">
+                                {% if contact.all_emails %}
+                                    <select class="border border-gray-300 rounded px-2 py-1 text-sm">
+                                        {% for email in contact.all_emails %}
+                                            <option value="{{ email }}">{{ email }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% elif contact.email %}
+                                    <a href="mailto:{{ contact.email }}" class="text-blue-500 underline">{{ contact.email }}</a>
+                                {% else %}
+                                    <span class="text-gray-400">Unavailable</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2">{{ contact.email_source or 'N/A' }}</td>
+                            <td class="py-2">
+                                {% if contact.email_status == "verified" %}
+                                    <span class="text-green-600 font-semibold">✅ Verified</span>
+                                {% elif contact.email_status %}
+                                    <span class="text-yellow-600 font-semibold">⚠️ {{ contact.email_status|capitalize }}</span>
+                                {% else %}
+                                    <span class="text-gray-400">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2">
+                                {% if contact.linkedin %}
+                                    <a href="{{ contact.linkedin }}" target="_blank" class="text-blue-500 underline">Profile</a>
+                                {% else %}
+                                    <span class="text-gray-400">N/A</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="py-2">
+                                <input type="checkbox" name="export_selected_{{ contact._id }}" value="{{ contact._id }}"
+                                      {% if contact.export_selected %}checked{% endif %}>
+
+
+                            </td>
+                            
+
+
+
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Bulk Action Buttons -->
+                <div class="flex gap-4 mt-4">
+                    <button name="action" value="apollo" type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">
+                        🚀 Find Emails with Apollo
+                    </button>
+                    <button name="action" value="signalhire" type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded">
+                        🔥 Find Emails with SignalHire
+                    </button>
+                    <button name="action" value="export" formaction="/export_selected_csv"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow">
+                        📤 Export Selected to CSV
+                    </button>
+                    
+                </div>
+            </form>
+
+            
+
+
+        </div>
+        {% endfor %}
+
+        {% if domain_query and not results %}
+            <p class="text-center text-gray-500 mt-10">No company found for <strong>{{ domain_query }}</strong>.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
