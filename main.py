@@ -22,6 +22,7 @@ load_dotenv()
 
 
 API_KEY = os.getenv("APOLLO_API_KEY")
+CALLBACK_URL = os.getenv("CALLBACK_URL", "/callback")
 
 if not API_KEY:
     raise RuntimeError("Missing APOLLO_API_KEY environment variable.")
@@ -629,7 +630,7 @@ async def signalhire_request(
     }
     payload = {
         "items": [linkedin if linkedin else f"{first_name} {last_name} {company_domain}"],
-        "callbackUrl": "https://lead.ngrok.dev/callback"
+        "callbackUrl": CALLBACK_URL
     }
 
     async with httpx.AsyncClient() as client:
@@ -697,7 +698,7 @@ async def bulk_action(request: Request):
             # 🔥 Send ONE single request for all LinkedIns
             payload = {
                 "items": selected_contacts,
-                "callbackUrl": "https://lead.ngrok.dev/callback"
+                "callbackUrl": CALLBACK_URL
             }
             headers = {
                 "apikey": SIGNALHIRE_KEY,
