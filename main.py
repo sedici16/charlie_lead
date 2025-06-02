@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Query
+from fastapi import FastAPI, Request, Form, Query, status
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -21,8 +21,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+
 API_KEY = os.getenv("APOLLO_API_KEY")
 CALLBACK_URL = os.getenv("CALLBACK_URL", "/callback")
+PASSWORD = os.getenv("ACCESS_PASSWORD")
 
 if not API_KEY:
     raise RuntimeError("Missing APOLLO_API_KEY environment variable.")
@@ -87,6 +89,9 @@ match_url = 'https://api.apollo.io/api/v1/people/match'
 # Route: GET homepage with form, display the home page and its forms
 @app.get("/", response_class=HTMLResponse)
 async def read_form(request: Request):
+    password = request.query_params.get("password")
+    if password != PASSWORD:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")  
     available_domains = await db["domains_for_sale"].find().to_list(length=None)
     return templates.TemplateResponse("index.html", {"request": request, "job_titles": job_titles, "available_domains": available_domains})
 
