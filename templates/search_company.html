@@ -86,26 +86,42 @@
                 <input type="hidden" name="source" value="company_id">
 
                 <table class="w-full text-sm table-auto">
+
                     <thead class="text-left text-gray-600 border-b">
                         <tr>
-                            <th class="pb-2"><input type="checkbox" id="select_all" class="form-checkbox"></th>
+                            <th class="pb-2 px-2 text-center">Select for Export</th>
+
                             <th class="pb-2">Name</th>
                             <th class="pb-2">Title</th>
+
+                            <th class="px-2 text-center align-middle">
+                                <label for="select_all" class="block text-sm text-gray-600 mb-1">Find Emails</label>
+                                <input type="checkbox" id="select_all" class="form-checkbox">
+                            </th>
+                            
+
+
                             <th class="pb-2">Email</th>
                             <th class="pb-2">Source</th>
                             <th class="pb-2">Status</th>
                             <th class="pb-2">LinkedIn</th>
-                            <th class="pb-2">Export</th> <!-- 🔽 NEW COLUMN -->
                         </tr>
                     </thead>
+                    
+                    
                     <tbody>
                         {% for contact in result.employees %}
                         <tr class="border-b hover:bg-gray-50">
-                            <td class="py-2">
-                                <input type="checkbox" name="selected_contacts" value="{{ contact.linkedin }}" class="form-checkbox contact-checkbox">
-                            </td>
+
+                            <td class="py-2 text-center">
+                                <input type="checkbox" name="export_selected_{{ contact._id }}" value="{{ contact._id }}" class="form-checkbox">
+                              </td>
+                              
                             <td class="py-2">{{ contact.first_name }} {{ contact.last_name }}</td>
                             <td class="py-2">{{ contact.title or "N/A" }}</td>
+                            <td class="py-2 text-center">
+                                <input type="checkbox" name="selected_contacts" value="{{ contact.linkedin }}" class="form-checkbox contact-checkbox">
+                            </td>
                             <td class="py-2">
                                 {% if contact.all_emails %}
                                     <select class="border border-gray-300 rounded px-2 py-1 text-sm">
@@ -136,21 +152,10 @@
                                     <span class="text-gray-400">N/A</span>
                                 {% endif %}
                             </td>
-
-                            <td class="py-2">
-                                <input type="checkbox" name="export_selected_{{ contact._id }}" value="{{ contact._id }}"
-                                      {% if contact.export_selected %}checked{% endif %}>
-
-
-                            </td>
-                            
-
-
-
-
                         </tr>
                         {% endfor %}
                     </tbody>
+                    
                 </table>
 
                 <!-- Bulk Action Buttons -->
@@ -179,5 +184,20 @@
             <p class="text-center text-gray-500 mt-10">No company found for <strong>{{ domain_query }}</strong>.</p>
         {% endif %}
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const selectAll = document.getElementById("select_all");
+          const contactCheckboxes = document.querySelectorAll(".contact-checkbox");
+      
+          if (selectAll) {
+            selectAll.addEventListener("change", function () {
+              contactCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+            });
+          }
+        });
+      </script>
+      
+
 </body>
 </html>
