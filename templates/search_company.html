@@ -114,7 +114,15 @@
                         <tr class="border-b hover:bg-gray-50">
 
                             <td class="py-2 text-center">
-                                <input type="checkbox" name="export_selected_{{ contact._id }}" value="{{ contact._id }}" class="form-checkbox">
+                               
+                                <input 
+                                    type="checkbox" 
+                                    name="export_selected_{{ contact._id }}" 
+                                    value="{{ contact._id|string }}" 
+                                    class="form-checkbox"
+                                    {% if contact.export_selected %}checked{% endif %}>
+
+
                               </td>
                               
                             <td class="py-2">{{ contact.first_name }} {{ contact.last_name }}</td>
