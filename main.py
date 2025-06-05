@@ -73,12 +73,13 @@ MONGO_URI = "mongodb+srv://gab_lead:jGQMefKw4RFr2mwS@cluster0.t2s7w4o.mongodb.ne
 app = FastAPI()
 
 
+# middleware 
+app.add_middleware(AuthMiddleware)
 
 #session secrcted
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
 
-# middleware 
-app.add_middleware(AuthMiddleware)
+
 
 
 
