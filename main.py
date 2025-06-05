@@ -20,6 +20,34 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
+
+
+EXEMPT_PATHS = {"/login", "/callback", "/static", "/favicon.ico"}
+
+class AuthMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope, receive=receive)
+        path = request.url.path
+
+        if any(path.startswith(p) for p in EXEMPT_PATHS):
+            await self.app(scope, receive, send)
+            return
+
+        if not request.session.get("authenticated"):
+            response = RedirectResponse(url="/login", status_code=303)
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
 
 
 API_KEY = os.getenv("APOLLO_API_KEY")
@@ -36,11 +64,24 @@ if not SIGNALHIRE_KEY:
 
 # Apollo API Key
 #API_KEY = 'FaihL1Eu7Ohla4AU39f_yQ'
+
+
 # MongoDB connection URI
 MONGO_URI = "mongodb+srv://gab_lead:jGQMefKw4RFr2mwS@cluster0.t2s7w4o.mongodb.net/?retryWrites=true&w=majority"
 
 # Initialize the FastAPI app
 app = FastAPI()
+
+
+
+#session secrcted
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET"))
+
+# middleware 
+app.add_middleware(AuthMiddleware)
+
+
+
 
 # Mount static directory (optional, for CSS/JS if needed)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -56,7 +97,7 @@ company_collection = db["companies"]
 
 # List of job titles to filter contacts
 job_titles = [
-    'ceo', 'chief executive officer', 'owner', 'founder', 'co-founder',
+    'ceo', 'chief executive officer', 'founder', 'co-founder',
     'head of marketing', 'cmo', 'head of business development', 'head of sales',
     'vp of business development', 'vp of sales and marketing', 'vp of marketing',
     'vice president of business development', 'vice president of sales and marketing',
@@ -86,12 +127,27 @@ company_url = 'https://api.apollo.io/api/v1/mixed_companies/search'
 people_url = 'https://api.apollo.io/api/v1/mixed_people/search'
 match_url = 'https://api.apollo.io/api/v1/people/match'
 
+
+
+#log in route 
+@app.get("/login", response_class=HTMLResponse)
+async def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login(request: Request, password: str = Form(...)):
+    if password == PASSWORD:
+        request.session["authenticated"] = True
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid password"})
+
+
+
+
+
 # Route: GET homepage with form, display the home page and its forms
 @app.get("/", response_class=HTMLResponse)
 async def read_form(request: Request):
-    password = request.query_params.get("password")
-    if password != PASSWORD:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")  
     available_domains = await db["domains_for_sale"].find().to_list(length=None)
     return templates.TemplateResponse("index.html", {"request": request, "job_titles": job_titles, "available_domains": available_domains})
 
@@ -105,10 +161,13 @@ async def process_form(
 
     domain_list = [d.strip() for d in domains.splitlines() if d.strip()]
     custom_titles = [t.strip().lower() for t in job_titles.splitlines() if t.strip()]
+    available_domains = await db["domains_for_sale"].find().to_list(length=None)
+
 
     
     results, logs = await fetch_all(domain_list, custom_titles, domain_sale)
     return templates.TemplateResponse("index.html", {
+        "available_domains": available_domains,  # ← must be here
         "request": request,
         "result": f"\u2705 Processed {len(results)} contacts from {len(domain_list)} domains.",
         "logs": logs,
@@ -802,8 +861,6 @@ async def export_selected_csv(request: Request):
 
     
 
-
-
 #wait for the answer from signalhire and store the response.
 @app.post("/callback")
 async def signalhire_callback(request: Request):
@@ -1050,9 +1107,6 @@ async def add_domain(
 async def delete_domain(domain: str = Form(...)):
     await db["domains_for_sale"].delete_one({"domain": domain})
     return RedirectResponse(url="/manage_domains", status_code=303)
-
-
-
 
 
 @app.get("/download_csv_by_keyword", response_class=StreamingResponse)

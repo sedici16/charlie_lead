@@ -99,8 +99,8 @@
             <textarea name="job_titles" rows="8">{% if job_titles %}{{ job_titles | join('\n') }}{% endif %}</textarea>
 
             <label for="domain_sale">Domain for Sale</label>
-            <select name="domain_sale" id="domain_sale">
-                <option value="">-- Select a domain --</option>
+            <select name="domain_sale" id="domain_sale" required>
+                <option value="" disabled selected>-- Select a domain --</option>
                 {% for d in available_domains %}
                     <option value="{{ d.domain }}">{{ d.domain }} — ${{ d.price }}</option>
                 {% endfor %}
