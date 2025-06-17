@@ -1,130 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Lead Processor</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 40px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-        }
-        h1 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a202c;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        label {
-            font-weight: 600;
-            display: block;
-            margin-top: 20px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        textarea,
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: monospace;
-        }
-        button {
-            display: block;
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            font-size: 16px;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            margin-top: 30px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .result {
-            margin-top: 30px;
-            padding: 16px;
-            border-radius: 6px;
-            background-color: #e6ffe6;
-            border: 1px solid #28a745;
-            color: #155724;
-            font-weight: 500;
-        }
-        .log-box {
-            margin-top: 30px;
-            padding: 16px;
-            background: #fdfdfd;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 14px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .log-box ul {
-            list-style: disc;
-            padding-left: 20px;
-        }
-        .log-box li {
-            margin-bottom: 6px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Lead Processor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>🧠 Lead Processor</h1>
+<body class="bg-gray-100 text-gray-800">
+  {% include 'partials/header.html' %}
 
-        <form method="post" action="/process">
-            <label for="domains">Enter one domain or Apollo ID per line:</label>
-            <textarea name="domains" placeholder="example.com&#10;67e2e92dfdee22000df33dfd" rows="6"></textarea>
+  <main class="max-w-2xl mx-auto mt-10 px-4">
+    <div class="bg-white shadow-md rounded-xl p-6 sm:p-10">
+      <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">🧠 Lead Processor</h1>
 
-            <label for="job_titles">Job titles to filter (one per line):</label>
-            <textarea name="job_titles" rows="8">{% if job_titles %}{{ job_titles | join('\n') }}{% endif %}</textarea>
+      <form method="post" action="/process" class="space-y-6">
 
-            <label for="domain_sale">Domain for Sale</label>
-            <select name="domain_sale" id="domain_sale" required>
-                <option value="" disabled selected>-- Select a domain --</option>
-                {% for d in available_domains %}
-                    <option value="{{ d.domain }}">{{ d.domain }} — ${{ d.price }}</option>
-                {% endfor %}
-            </select>
-
-            <button type="submit">🚀 Start Processing</button>
-        </form>
-
-        {% if result %}
-        <div class="result">
-            {{ result }}
+        <!-- Domains -->
+        <div>
+          <label for="domains" class="block font-semibold text-gray-700 mb-1">Enter one domain or Apollo ID per line:</label>
+          <textarea name="domains" rows="6" placeholder="example.com&#10;67e2e92dfdee22000df33dfd"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
         </div>
-        {% endif %}
 
-        {% if logs %}
-        <div class="log-box">
-            <strong>Log:</strong>
-            <ul>
-                {% for entry in logs %}
-                <li>{{ entry }}</li>
-                {% endfor %}
-            </ul>
+        <!-- Job Titles -->
+        <div>
+          <label for="job_titles" class="block font-semibold text-gray-700 mb-1">Job titles to filter (one per line):</label>
+          <textarea name="job_titles" rows="8"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">{% if job_titles %}{{ job_titles | join('\n') }}{% endif %}</textarea>
         </div>
-        {% endif %}
+
+        <!-- Domain for Sale -->
+        <div>
+          <label for="domain_sale" class="block font-semibold text-gray-700 mb-1">Domain for Sale:</label>
+          <select name="domain_sale" id="domain_sale" required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="" disabled selected>-- Select a domain --</option>
+            {% for d in available_domains %}
+              <option value="{{ d.domain }}">{{ d.domain }} — ${{ d.price }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md shadow">
+          🚀 Start Processing
+        </button>
+      </form>
+
+      <!-- Result Message -->
+      {% if result %}
+        <div class="mt-8 p-4 rounded-md border border-green-400 bg-green-50 text-green-700 font-medium">
+          {{ result }}
+        </div>
+      {% endif %}
+
+      <!-- Log Output -->
+      {% if logs %}
+        <div class="mt-8">
+          <strong class="block text-sm font-semibold text-gray-700 mb-2">Log:</strong>
+          <ul class="bg-gray-50 border border-gray-300 rounded-md p-4 text-sm font-mono max-h-80 overflow-y-auto list-disc pl-6 space-y-1">
+            {% for entry in logs %}
+              <li>{{ entry }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
     </div>
+  </main>
 </body>
 </html>

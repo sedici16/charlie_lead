@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, Form, Query, status
+from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +18,9 @@ from bson import ObjectId
 from fastapi import HTTPException
 from bson.errors import InvalidId
 import os
+from bson.regex import Regex
+import re
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -62,8 +66,6 @@ SIGNALHIRE_KEY = os.getenv("SIGNALHIRE_API_KEY")
 if not SIGNALHIRE_KEY:
     raise RuntimeError("Missing SIGNALHIRE_API_KEY environment variable.")
 
-# Apollo API Key
-#API_KEY = 'FaihL1Eu7Ohla4AU39f_yQ'
 
 
 # MongoDB connection URI
@@ -176,6 +178,19 @@ async def process_form(
         "domains": domains  # 👈 this keeps the original input in the form
         
     })
+
+
+
+
+@app.get("/autocomplete_companies")
+async def autocomplete_companies(q: str = Query(..., min_length=2)):
+    escaped_query = re.escape(q)  # 🔒 Escape special regex characters
+    regex = Regex(f".*{escaped_query}.*", "i")  # Case-insensitive
+    cursor = company_collection.find({"name": regex}, {"name": 1, "company_id": 1}).limit(100)
+    results = await cursor.to_list(length=10)
+    return [{"value": c["name"], "label": f"{c['name']} (company)"} for c in results if "name" in c]
+
+
 
 # Asynchronously process all domains
 async def fetch_all(domains: List[str], job_titles: List[str], domain_sale: str):
@@ -680,6 +695,82 @@ async def search_by_company_id(request: Request, domain_query: str = Form(None))
     })
 
 
+@app.get("/autocomplete_domains_for_sale")
+async def autocomplete_domains_for_sale(q: str = Query(..., min_length=2)):
+    escaped_query = re.escape(q)  # Escape special regex characters
+    regex = Regex(f".*{escaped_query}.*", "i")  # Case-insensitive match
+    cursor = db["domains_for_sale"].find({"domain": regex}, {"domain": 1, "price": 1}).limit(20)
+    results = await cursor.to_list(length=20)
+    return [{"value": d["domain"], "label": f"{d['domain']} - €{d.get('price', 'N/A')}"} for d in results if "domain" in d]
+
+
+
+@app.post("/autocomplete_companies ", response_class=HTMLResponse)
+@app.get("/search_by_domain_sale", response_class=HTMLResponse)
+async def search_by_domain_sale(request: Request, domain_query: str = Form(None)):
+    if request.method == "GET":
+        domain_query = request.query_params.get("domain_query")
+
+    if not domain_query:
+        return templates.TemplateResponse("search_company.html", {
+            "request": request,
+            "results": [],
+            "domain_query": ""
+        })
+
+    domain_normalized = domain_query.lower().replace("http://", "").replace("https://", "").replace("www.", "")
+
+    # 🔁 Match all companies with this domain_for_sale
+    companies = await company_collection.find({
+        "$or": [
+            {"domain_for_sale": {"$regex": domain_normalized, "$options": "i"}},
+            {"domain": {"$regex": domain_normalized, "$options": "i"}},
+            {"website_url": {"$regex": domain_normalized, "$options": "i"}},
+            {"name": {"$regex": domain_normalized, "$options": "i"}} 
+        ]
+    }).to_list(length=None)
+
+    if not companies:
+        return templates.TemplateResponse("search_company.html", {
+            "request": request,
+            "results": [],
+            "domain_query": domain_query
+        })
+
+    results = []
+
+    for company in companies:
+        domain_key = company.get("domain_for_sale")
+        if domain_key:
+            domain_doc = await db["domains_for_sale"].find_one({"domain": domain_key})
+            if domain_doc:
+                company["price"] = domain_doc.get("price")
+
+        company_id = company.get("company_id") or company.get("id")
+        employees = await collection.find({"company_id": company_id}).to_list(length=None)
+
+        for emp in employees:
+            emp["all_emails"] = sorted(
+                emp.get("all_emails", []),
+                key=lambda e: domain_normalized not in e.lower()
+            )
+
+        results.append({
+            "company": company,
+            "employees": employees
+        })
+
+    return templates.TemplateResponse("search_company.html", {
+        "request": request,
+        "results": results,
+        "domain_query": domain_query
+    })
+
+
+
+
+
+
 
 @app.post("/signalhire_request")
 async def signalhire_request(
@@ -790,7 +881,7 @@ async def bulk_action(request: Request):
 
     # 🔁 Redirect to correct search view use the old route or the new one earch_by_company_id
     if source == "company_id":
-        return RedirectResponse(url=f"/search_by_company_id?domain_query={domain_query}", status_code=303)
+        return RedirectResponse(url=f"/search_by_domain_sale?domain_query={domain_query}", status_code=303)
     else:
         return RedirectResponse(url=f"/search?domain_query={domain_query}", status_code=303)
     
@@ -801,6 +892,7 @@ async def bulk_action(request: Request):
 async def export_selected_csv(request: Request):
     form = await request.form()
     company_id = form.get("company_id")
+
 
     # ✅ Parse all selected _id values from checkbox names
     selected_ids = [
@@ -855,10 +947,11 @@ async def export_selected_csv(request: Request):
 
     output.seek(0)
     return StreamingResponse(
-        output,
+        iter([u'\ufeff' + output.getvalue()]),  # 🔥 UTF-8 BOM prefix
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=selected_contacts_{company_id}.csv"}
     )
+
 
     
 

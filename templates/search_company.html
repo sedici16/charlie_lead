@@ -6,19 +6,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
+    {% include 'partials/header.html' %}
     <div class="max-w-5xl mx-auto py-10">
         <h1 class="text-3xl font-bold mb-6 text-center">🏢 Search Company and Employees</h1>
 
-        <!-- Search Form -->
-        <form method="get" action="/search_by_company_id" class="flex gap-4 justify-center mb-10">
+        <form method="get" action="/search_by_domain_sale" class="flex gap-4 justify-center mb-10">
             <input 
+                id="smartInput"
                 name="domain_query" 
                 type="text" 
-                placeholder="e.g. gingercomms.com or GingerComms" 
+                placeholder="Search company name or domain for sale..." 
                 value="{{ domain_query or '' }}"  
                 class="border border-gray-300 rounded-lg px-4 py-2 w-80 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                list="companySuggestions"
+                autocomplete="off"
                 required
             />
+            <datalist id="companySuggestions"></datalist>
+
             <button 
                 type="submit" 
                 class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow">
@@ -26,105 +31,57 @@
             </button>
         </form>
 
-        {% for result in results %}
-        <div class="bg-white rounded-xl shadow p-6 mb-8">
-            <div class="mb-4">
+        <form method="post" action="/bulk_action">
+            <input type="hidden" name="domain_query" value="{{ domain_query }}">
+            <input type="hidden" name="source" value="company_id">
 
+            {% for result in results %}
+            <div class="bg-white rounded-xl shadow p-6 mb-10">
+                <h2 class="text-2xl font-bold text-blue-600 mb-4">{{ result.company.name or "Unknown Company" }}</h2>
 
+                {% if result.company.company_id %}
+                <a href="/download_csv_by_company_id?company_id={{ result.company.company_id }}"
+                   class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded inline-block mb-2">
+                    ⬇️ Export CSV (by Company ID)
+                </a>
+                {% endif %}
 
-             <div class="mb-4 border-b pb-4">
-              <h2 class="text-2xl font-bold text-blue-600">{{ result.company.name or "Unknown Company" }}</h2>
-
-              {% if result.company.company_id %}
-                  <div class="mt-4">
-                      <a href="/download_csv_by_company_id?company_id={{ result.company.company_id }}"
-                         class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded inline-block">
-                          ⬇️ Export CSV (by Company ID)
-                      </a>
-                  </div>
-              {% endif %}
-
-                      
-              {% if result.company.website_url %}
-                  <p class="text-sm text-gray-600">
-                      🌐 <a href="{{ result.company.website_url }}" target="_blank" class="underline text-blue-500">{{ result.company.website_url }}</a>
-                  </p>
-              {% endif %}
-          
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm mt-2 text-gray-700">
-                  {% if result.company.linkedin_url %}<div>🔗 LinkedIn: <a href="{{ result.company.linkedin_url }}" class="text-blue-500 underline">{{ result.company.linkedin_url }}</a></div>{% endif %}
-                  {% if result.company.domain %}<div>🌍 Domain: {{ result.company.domain }}</div>{% endif %}
-                  {% if result.company.city %}<div>🏙️ City: {{ result.company.city }}</div>{% endif %}
-                  {% if result.company.industry %}<div>🏭 Industry: {{ result.company.industry }}</div>{% endif %}
-                  {% if result.company.company_size %}<div>👥 Size: {{ result.company.company_size }}</div>{% endif %}
-                  {% if result.company.estimated_num_employees %}<div>📊 Employees: {{ result.company.estimated_num_employees }}</div>{% endif %}
-                  {% if result.company.revenue_range %}<div>💰 Revenue Range: {{ result.company.revenue_range }}</div>{% endif %}
-                  {% if result.company.organization_revenue_printed %}<div>💵 Revenue: {{ result.company.organization_revenue_printed }}</div>{% endif %}
-                  {% if result.company.headcount_growth_6m %}<div>📈 6M Growth: {{ result.company.headcount_growth_6m }}</div>{% endif %}
-                  {% if result.company.headcount_growth_12m %}<div>📈 12M Growth: {{ result.company.headcount_growth_12m }}</div>{% endif %}
-                  {% if result.company.headcount_growth_24m %}<div>📈 24M Growth: {{ result.company.headcount_growth_24m }}</div>{% endif %}
-                  {% if result.company.intent_strength %}<div>🔥 Intent Strength: {{ result.company.intent_strength }}</div>{% endif %}
-                  {% if result.company.price %}<div>💸 Price: ${{ result.company.price }}</div>{% endif %}
-                  {% if result.company.domain_for_sale %}<div>🛒 Domain for Sale: {{ result.company.domain_for_sale }}</div>{% endif %}
-
-              </div>
-          </div>
-          
-                
-
-
-                <p class="text-sm text-gray-600">
-                    🌐 <a href="{{ result.company.website_url }}" class="underline text-blue-500" target="_blank">{{ result.company.domain }}</a>
-                    {% if result.company.industry %} | 🏭 {{ result.company.industry }}{% endif %}
-                    {% if result.company.estimated_num_employees %} | 👥 {{ result.company.estimated_num_employees }} employees{% endif %}
-                </p>
-            </div>
-
-            <!-- Employee Table -->
-            <form method="post" action="/bulk_action">
-                <input type="hidden" name="domain_query" value="{{ domain_query }}">
-                <input type="hidden" name="source" value="company_id">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-700 mb-4">
+                    {% if result.company.linkedin_url %}<div>🔗 LinkedIn: <a href="{{ result.company.linkedin_url }}" class="text-blue-500 underline">{{ result.company.linkedin_url }}</a></div>{% endif %}
+                    {% if result.company.domain %}<div>🌍 Domain: {{ result.company.domain }}</div>{% endif %}
+                    {% if result.company.city %}<div>🏙️ City: {{ result.company.city }}</div>{% endif %}
+                    {% if result.company.industry %}<div>🏭 Industry: {{ result.company.industry }}</div>{% endif %}
+                    {% if result.company.company_size %}<div>👥 Size: {{ result.company.company_size }}</div>{% endif %}
+                    {% if result.company.estimated_num_employees %}<div>📊 Employees: {{ result.company.estimated_num_employees }}</div>{% endif %}
+                    {% if result.company.revenue_range %}<div>💰 Revenue Range: {{ result.company.revenue_range }}</div>{% endif %}
+                    {% if result.company.organization_revenue_printed %}<div>💵 Revenue: {{ result.company.organization_revenue_printed }}</div>{% endif %}
+                    {% if result.company.headcount_growth_6m %}<div>📈 6M Growth: {{ result.company.headcount_growth_6m }}</div>{% endif %}
+                    {% if result.company.headcount_growth_12m %}<div>📈 12M Growth: {{ result.company.headcount_growth_12m }}</div>{% endif %}
+                    {% if result.company.headcount_growth_24m %}<div>📈 24M Growth: {{ result.company.headcount_growth_24m }}</div>{% endif %}
+                    {% if result.company.intent_strength %}<div>🔥 Intent Strength: {{ result.company.intent_strength }}</div>{% endif %}
+                    {% if result.company.price %}<div>💸 Price: ${{ result.company.price }}</div>{% endif %}
+                    {% if result.company.domain_for_sale %}<div>🛒 Domain for Sale: {{ result.company.domain_for_sale }}</div>{% endif %}
+                </div>
 
                 <table class="w-full text-sm table-auto">
-
                     <thead class="text-left text-gray-600 border-b">
                         <tr>
-                            <th class="pb-2 px-2 text-center">Select for Export</th>
-
+                            <th class="pb-2 px-2 text-center">Select</th>
                             <th class="pb-2">Name</th>
                             <th class="pb-2">Title</th>
-
-                            <th class="px-2 text-center align-middle">
-                                <label for="select_all" class="block text-sm text-gray-600 mb-1">Find Emails</label>
-                                <input type="checkbox" id="select_all" class="form-checkbox">
-                            </th>
-                            
-
-
+                            <th class="px-2 text-center">Find Emails</th>
                             <th class="pb-2">Email</th>
                             <th class="pb-2">Source</th>
                             <th class="pb-2">Status</th>
                             <th class="pb-2">LinkedIn</th>
                         </tr>
                     </thead>
-                    
-                    
                     <tbody>
                         {% for contact in result.employees %}
                         <tr class="border-b hover:bg-gray-50">
-
                             <td class="py-2 text-center">
-                               
-                                <input 
-                                    type="checkbox" 
-                                    name="export_selected_{{ contact._id }}" 
-                                    value="{{ contact._id|string }}" 
-                                    class="form-checkbox"
-                                    {% if contact.export_selected %}checked{% endif %}>
-
-
-                              </td>
-                              
+                                <input type="checkbox" name="export_selected_{{ contact._id }}" value="{{ contact._id|string }}" class="form-checkbox" {% if contact.export_selected %}checked{% endif %}>
+                            </td>
                             <td class="py-2">{{ contact.first_name }} {{ contact.last_name }}</td>
                             <td class="py-2">{{ contact.title or "N/A" }}</td>
                             <td class="py-2 text-center">
@@ -163,49 +120,82 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                    
                 </table>
 
-                <!-- Bulk Action Buttons -->
                 <div class="flex gap-4 mt-4">
-                    <button name="action" value="apollo" type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">
-                        🚀 Find Emails with Apollo
-                    </button>
-                    <button name="action" value="signalhire" type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded">
-                        🔥 Find Emails with SignalHire
-                    </button>
-                    <button name="action" value="export" formaction="/export_selected_csv"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow">
-                        📤 Export Selected to CSV
-                    </button>
-                    
+                    <button name="action" value="apollo" type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">🚀 Find Emails with Apollo</button>
+                    <button name="action" value="signalhire" type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded">🔥 Find Emails with SignalHire</button>
+                    <input type="hidden" name="company_id" value="{{ result.company.company_id }}">
+                    <button name="action" value="export" formaction="/export_selected_csv" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow">📤 Export Selected to CSV</button>
                 </div>
-            </form>
+            </div>
+            {% endfor %}
 
-            
+            {% if domain_query and not results %}
+                <p class="text-center text-gray-500 mt-10">No company found for <strong>{{ domain_query }}</strong>.</p>
+            {% endif %}
 
-
-        </div>
-        {% endfor %}
-
-        {% if domain_query and not results %}
-            <p class="text-center text-gray-500 mt-10">No company found for <strong>{{ domain_query }}</strong>.</p>
-        {% endif %}
+            <div class="flex gap-4 mt-10 justify-center">
+                <button name="action" value="Global Export" formaction="/export_selected_csv"
+                    class="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-6 py-2 rounded shadow">
+                    📤 Export All Selected to CSV
+                </button>
+            </div>
+        </form>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-          const selectAll = document.getElementById("select_all");
-          const contactCheckboxes = document.querySelectorAll(".contact-checkbox");
-      
-          if (selectAll) {
-            selectAll.addEventListener("change", function () {
-              contactCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-            });
-          }
-        });
-      </script>
-      
+            const selectAll = document.getElementById("select_all");
+            const contactCheckboxes = document.querySelectorAll(".contact-checkbox");
 
+            if (selectAll) {
+                selectAll.addEventListener("change", function () {
+                    contactCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                });
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const input = document.getElementById("smartInput");
+            const datalist = document.getElementById("companySuggestions");
+
+            input.addEventListener("input", async () => {
+                const query = input.value;
+                if (query.length < 2) return;
+
+                try {
+                    const [companyRes, domainRes] = await Promise.all([
+                        fetch(`/autocomplete_companies?q=${encodeURIComponent(query)}`),
+                        fetch(`/autocomplete_domains_for_sale?q=${encodeURIComponent(query)}`)
+                    ]);
+
+                    const companies = await companyRes.json();
+                    const domains = await domainRes.json();
+
+                    datalist.innerHTML = "";
+
+                    companies.forEach(company => {
+                        const option = document.createElement("option");
+                        option.value = company.value;
+                        option.label = company.label || company.value;
+                        datalist.appendChild(option);
+                    });
+
+                    domains.forEach(domain => {
+                        const option = document.createElement("option");
+                        option.value = domain.value;
+                        option.label = domain.label || domain.value;
+                        datalist.appendChild(option);
+                    });
+
+                } catch (err) {
+                    console.error("Autocomplete error:", err);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
