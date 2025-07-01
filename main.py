@@ -159,8 +159,10 @@ async def read_form(request: Request):
 async def process_form(
     request: Request, domains: str = Form(...),
     job_titles: str = Form(...), 
-    domain_sale: str = Form(...)):
-    
+    domain_sale: str = Form(...),
+    per_page: int = Form(100),  # 👈 Add this line with default value
+    include_similar_titles: bool = Form(False) #fuzzy search
+    ):
 
     domain_list = [d.strip() for d in domains.splitlines() if d.strip()]
     custom_titles = [t.strip().lower() for t in job_titles.splitlines() if t.strip()]
@@ -168,7 +170,7 @@ async def process_form(
 
 
     
-    results, logs = await fetch_all(domain_list, custom_titles, domain_sale)
+    results, logs = await fetch_all(domain_list, custom_titles, domain_sale, per_page=per_page, include_similar_titles=include_similar_titles)
     return templates.TemplateResponse("index.html", {
         "available_domains": available_domains,  # ← must be here
         "request": request,
@@ -193,13 +195,13 @@ async def autocomplete_companies(q: str = Query(..., min_length=2)):
 
 
 # Asynchronously process all domains
-async def fetch_all(domains: List[str], job_titles: List[str], domain_sale: str):
+async def fetch_all(domains: List[str], job_titles: List[str], domain_sale: str, per_page: int, include_similar_titles: bool):
     contacts = []
     log_entries = []
 
     timeout = httpx.Timeout(20.0, connect=10.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
-        tasks = [process_domain(domain, client, job_titles, domain_sale) for domain in domains]
+        tasks = [process_domain(domain, client, job_titles, domain_sale, per_page, include_similar_titles) for domain in domains]
         all_contacts_nested = await asyncio.gather(*tasks)
 
         #loop to add data into mongodb
@@ -249,7 +251,7 @@ async def fetch_all(domains: List[str], job_titles: List[str], domain_sale: str)
     return contacts, log_entries
 
 # Process a single domain (fetch company and employees)
-async def process_domain(domain: str, client: httpx.AsyncClient, job_titles: List[str], domain_sale: str):
+async def process_domain(domain: str, client: httpx.AsyncClient, job_titles: List[str], domain_sale: str,  per_page: int, include_similar_titles: bool):
 
     #companies = await fetch_company_all(domain, client)
     companies = await fetch_by_domain_or_id_update(domain, client)
@@ -289,7 +291,7 @@ async def process_domain(domain: str, client: httpx.AsyncClient, job_titles: Lis
             upsert=True
         )
 
-        people = await fetch_people(company_id, client, job_titles)
+        people = await fetch_people(company_id, client, job_titles, per_page, include_similar_titles)
         fetch_emails = len(people) <= 5  # 👈 only fetch emails if 5 or fewer employees
         
         for person in people:
@@ -387,24 +389,35 @@ async def fetch_company_all(domain, client):
 
 
 # Fetch employees from Apollo API
-async def fetch_people(company_id, client, job_titles: List[str]):
+async def fetch_people(company_id, client, job_titles: List[str], per_page: int = 100, include_similar_titles: bool = False):
     payload = {
         "api_key": API_KEY,
         "organization_ids": [company_id],
         "page": 1,
-        "per_page": 100,
+        "per_page": per_page,
         #"job_titles": job_titles
-        "person_titles": job_titles
+        "person_titles": job_titles,
+        "include_similar_titles": include_similar_titles
     }
 
     res = await client.post(people_url, json=payload)
     #print("👀 Full people JSON:\n", json.dumps(res.json(), indent=2))
+    
 
     if res.status_code != 200:
         print(f"❌ Failed to fetch people for company ID {company_id}: {res.status_code}")
         return []
+    
+    data = res.json()
 
-    people = res.json().get("people", [])
+    people = data.get("people", [])
+    pagination = data.get("pagination", {})
+
+    print ("pagination", pagination)
+
+    print("👀 Full people JSON:\n", json.dumps(data, indent=2))  # ✅ Works
+
+    #people = res.json().get("people", [])
 
     print(f"\n👥 People fetched for company ID {company_id}:")
     if not people:
