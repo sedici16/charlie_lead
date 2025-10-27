@@ -35,7 +35,7 @@ if not SIGNALHIRE_KEY:
     raise RuntimeError("Missing SIGNALHIRE_API_KEY environment variable.")
 
 # Apollo API Key
-#API_KEY = 'FaihL1Eu7Ohla4AU39f_yQ'
+
 # MongoDB connection URI
 MONGO_URI = "mongodb+srv://gab_lead:jGQMefKw4RFr2mwS@cluster0.t2s7w4o.mongodb.net/?retryWrites=true&w=majority"
 
