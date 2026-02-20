@@ -313,8 +313,14 @@ async def fetch_company_all(domain, client):
 
 # Fetch employees from Apollo API
 async def fetch_people(company_id, client, job_titles: List[str]):
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Api-Key": API_KEY
+    }
+    
     payload = {
-        "api_key": API_KEY,
+        #"api_key": API_KEY,
         "organization_ids": [company_id],
         "page": 1,
         "per_page": 100,
@@ -322,7 +328,7 @@ async def fetch_people(company_id, client, job_titles: List[str]):
         "person_titles": job_titles
     }
 
-    res = await client.post(people_url, json=payload)
+    res = await client.post(people_url, json=payload, headers=headers)
     #print("👀 Full people JSON:\n", json.dumps(res.json(), indent=2))
 
     if res.status_code != 200:
