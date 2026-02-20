@@ -127,7 +127,7 @@ job_titles = [
 # Apollo API endpoints
 company_url = 'https://api.apollo.io/api/v1/mixed_companies/search'
 #people_url = 'https://api.apollo.io/v1/people/search'
-people_url = 'https://api.apollo.io/api/v1/mixed_people/api_search'
+people_url = 'https://api.apollo.io/api/v1/mixed_people/search'
 match_url = 'https://api.apollo.io/api/v1/people/match'
 
 
