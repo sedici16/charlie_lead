@@ -127,7 +127,7 @@ job_titles = [
 # Apollo API endpoints
 company_url = 'https://api.apollo.io/api/v1/mixed_companies/search'
 #people_url = 'https://api.apollo.io/v1/people/search'
-people_url = 'https://api.apollo.io/api/v1/mixed_people/search'
+people_url = 'https://api.apollo.io/api/v1/mixed_people/api_search'
 match_url = 'https://api.apollo.io/api/v1/people/match'
 
 
@@ -390,8 +390,15 @@ async def fetch_company_all(domain, client):
 
 # Fetch employees from Apollo API
 async def fetch_people(company_id, client, job_titles: List[str], per_page: int = 100, include_similar_titles: bool = False):
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Api-Key": API_KEY
+    } 
+    
+    
     payload = {
-        "api_key": API_KEY,
+        #"api_key": API_KEY,
         "organization_ids": [company_id],
         "page": 1,
         "per_page": per_page,
@@ -400,7 +407,7 @@ async def fetch_people(company_id, client, job_titles: List[str], per_page: int 
         "include_similar_titles": include_similar_titles
     }
 
-    res = await client.post(people_url, json=payload)
+    res = await client.post(people_url, json=payload, headers=headers)
     #print("👀 Full people JSON:\n", json.dumps(res.json(), indent=2))
     
 
