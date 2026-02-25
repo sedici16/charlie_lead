@@ -327,7 +327,7 @@ async def fetch_people(company_id, client, job_titles: List[str]):
         "page": 1,
         "per_page": 100,
         #"job_titles": job_titles
-        "person_titles": job_titles
+        "person_titles[]": job_titles
     }
 
     res = await client.post(people_url, json=payload, headers=APOLLO_HEADERS)
