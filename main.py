@@ -26,8 +26,14 @@ API_KEY = os.getenv("APOLLO_API_KEY")
 CALLBACK_URL = os.getenv("CALLBACK_URL", "/callback")
 PASSWORD = os.getenv("ACCESS_PASSWORD")
 
+
 if not API_KEY:
     raise RuntimeError("Missing APOLLO_API_KEY environment variable.")
+
+APOLLO_HEADERS = {
+    "Content-Type": "application/json",
+    "X-Api-Key": API_KEY
+}
 
 SIGNALHIRE_KEY = os.getenv("SIGNALHIRE_API_KEY")
 
@@ -82,8 +88,8 @@ job_titles = [
 
 # Apollo API endpoints
 company_url = 'https://api.apollo.io/api/v1/mixed_companies/search'
-people_url = 'https://api.apollo.io/v1/people/search'
-#people_url = 'https://api.apollo.io/api/v1/mixed_people/api_search'
+#people_url = 'https://api.apollo.io/v1/people/search'
+people_url = 'https://api.apollo.io/v1/mixed_people/search'
 match_url = 'https://api.apollo.io/api/v1/people/match'
 
 # Route: GET homepage with form, display the home page and its forms
@@ -257,12 +263,12 @@ async def process_domain(domain: str, client: httpx.AsyncClient, job_titles: Lis
 # Fetch company info from Apollo API
 async def fetch_company(domain, client):
     payload = {
-        "api_key": API_KEY,
+        #"api_key": API_KEY,
         "q_organization_name": domain,
         "page": 1,
         "per_page": 1
     }
-    res = await client.post(company_url, json=payload)
+    res = await client.post(company_url, json=payload, headers=APOLLO_HEADERS)
     if res.status_code != 200:
         print(f"❌ Failed to fetch company for {domain}: {res.status_code}")
         return None
@@ -280,12 +286,12 @@ async def fetch_company_all(domain, client):
 
     while len(all_companies) < 50:
         payload = {
-            "api_key": API_KEY,
+            #"api_key": API_KEY,
             "q_organization_name": domain,
             "page": page,
             "per_page": per_page
         }
-        res = await client.post(company_url, json=payload)
+        res = await client.post(company_url, json=payload, headers=APOLLO_HEADERS)
         if res.status_code != 200:
             print(f"❌ Failed to fetch companies for {domain} on page {page}: {res.status_code}")
             break
@@ -314,21 +320,17 @@ async def fetch_company_all(domain, client):
 # Fetch employees from Apollo API
 async def fetch_people(company_id, client, job_titles: List[str]):
 
-    headers = {
-        "Content-Type": "application/json",
-        "X-Api-Key": API_KEY
-    }
-    
+
     payload = {
         #"api_key": API_KEY,
-        "organization_ids": [company_id],
+        "q_organization_ids": [company_id],
         "page": 1,
         "per_page": 100,
         #"job_titles": job_titles
         "person_titles": job_titles
     }
 
-    res = await client.post(people_url, json=payload, headers=headers)
+    res = await client.post(people_url, json=payload, headers=APOLLO_HEADERS)
     #print("👀 Full people JSON:\n", json.dumps(res.json(), indent=2))
 
     if res.status_code != 200:
@@ -350,7 +352,7 @@ async def fetch_people(company_id, client, job_titles: List[str]):
 # Fetch personal or fallback email from Apollo API
 async def fetch_email(client, first, last, domain, linkedin=None):
     payload = {
-        "api_key": API_KEY,
+        #"api_key": API_KEY,
         "first_name": first,
         "last_name": last,
         "domain": domain,
@@ -359,7 +361,7 @@ async def fetch_email(client, first, last, domain, linkedin=None):
     }
     if linkedin:
         payload["linkedin_url"] = linkedin
-    res = await client.post(match_url, json=payload)
+    res = await client.post(match_url, json=payload, headers=APOLLO_HEADERS)
     if res.status_code != 200:
         return None
     person = res.json().get("person", {})
@@ -386,12 +388,12 @@ async def fetch_by_domain_or_id(input_str: str, client: httpx.AsyncClient):
     if is_id:
         # Fetch single company by ID
         payload = {
-            "api_key": API_KEY,
+            #"api_key": API_KEY,
             "organization_ids": [input_str],
             "page": 1,
             "per_page": 1
         }
-        res = await client.post(company_url, json=payload)
+        res = await client.post(company_url, json=payload, headers=APOLLO_HEADERS)
         if res.status_code != 200:
             print(f"❌ Failed to fetch company by ID {input_str}: {res.status_code}")
             return []
@@ -415,12 +417,12 @@ async def fetch_by_domain_or_id_update(input_str: str, client: httpx.AsyncClient
 
     if is_id:
         payload = {
-            "api_key": API_KEY,
+            #"api_key": API_KEY,
             "organization_ids": [input_str],
             "page": 1,
             "per_page": 1
         }
-        res = await client.post(company_url, json=payload)
+        res = await client.post(company_url, json=payload, headers=APOLLO_HEADERS)
         if res.status_code != 200:
             print(f"❌ Error from mixed_companies for ID {input_str}: {res.status_code}")
             return []
@@ -475,13 +477,13 @@ async def fetch_from_accounts_by_keyword(keyword: str, client: httpx.AsyncClient
         print(f"📄 Page {page} (accounts)")
 
         payload = {
-            "api_key": API_KEY,
+            #"api_key": API_KEY,
             "q_organization_name": keyword,
             "page": page,
             "per_page": per_page
         }
 
-        res = await client.post(company_url, json=payload)
+        res = await client.post(company_url, json=payload, headers=APOLLO_HEADERS)
         if res.status_code != 200:
             print(f"❌ API error on page {page}: {res.status_code}")
             break
