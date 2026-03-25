@@ -43,7 +43,10 @@ if not SIGNALHIRE_KEY:
 # Apollo API Key
 
 # MongoDB connection URI
-MONGO_URI = "mongodb+srv://gab_lead:jGQMefKw4RFr2mwS@cluster0.t2s7w4o.mongodb.net/?retryWrites=true&w=majority"
+MONGO_URI = os.getenv("MONGO_URI")
+
+if not MONGO_URI:
+    raise RuntimeError("Missing MONGO_URI environment variable.")
 
 # Initialize the FastAPI app
 app = FastAPI()
